@@ -82,8 +82,7 @@ import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
-public class MainActivity extends AppCompatActivity
-        implements GoogleApiClient.OnConnectionFailedListener {
+public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener {
 
     public static class MessageViewHolder extends RecyclerView.ViewHolder {
         TextView messageTextView;
@@ -173,7 +172,7 @@ public class MainActivity extends AppCompatActivity
         }
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)
+                .enableAutoManage(this, this)
                 .addApi(Auth.GOOGLE_SIGN_IN_API)
                 .build();
 
@@ -417,6 +416,15 @@ public class MainActivity extends AppCompatActivity
                             });
                 }
             }
+        } else if (requestCode == REQUEST_INVITE) {
+            if (resultCode == RESULT_OK) {
+                // Check how many invitations were sent and log.
+                String[] ids = AppInviteInvitation.getInvitationIds(resultCode, data);
+                Log.d(TAG, "Invitations sent: " + ids.length);
+            } else {
+                // Sending failed or it was canceled, show failure message to the user
+                Log.d(TAG, "Failed to send invitation.");
+            }
         }
     }
 
@@ -474,6 +482,9 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.invite_menu:
+                sendInvitation();
+                return true;
             case R.id.fresh_config_menu:
                 fetchConfig();
                 return true;
@@ -489,8 +500,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        // An unresolvable error has occurred and Google APIs (including Sign-In) will not
-        // be available.
+        // An unresolvable error has occurred and Google APIs (including Sign-In) will not be available.
         Log.d(TAG, "onConnectionFailed:" + connectionResult);
         Toast.makeText(this, "Google Play Services error.", Toast.LENGTH_SHORT).show();
     }
@@ -520,5 +530,13 @@ public class MainActivity extends AppCompatActivity
                 .setObject(friendlyMessage.getName(), MESSAGE_URL.concat(friendlyMessage.getId()))
                 .setMetadata(new Action.Metadata.Builder().setUpload(false))
                 .build();
+    }
+
+    private void sendInvitation() {
+        Intent intent = new AppInviteInvitation.IntentBuilder(getString(R.string.invitation_title))
+                .setMessage(getString(R.string.invitation_message))
+                .setCallToActionText(getString(R.string.invitation_cta))
+                .build();
+        startActivityForResult(intent, REQUEST_INVITE);
     }
 }
